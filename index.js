@@ -11,7 +11,7 @@ app.use(express.json({ limit: "50mb" }));
 
 app.post("/render", upload.single("video"), (req, res) => {
   const chorus = req.body.opposite_chorus;
-  const lines = chorus.split("\n");
+  const lines = chorus.split(/\r?\n/).filter(Boolean);
   const spacing = 80;
   const fadeInDuration = 1;
 
@@ -27,7 +27,10 @@ app.post("/render", upload.single("video"), (req, res) => {
 
 const drawtextFilters = lines.map((line, i) => {
   const yOffset = `(h/2 - ${spacing * (lines.length / 2)}) + ${i * spacing}`;
-  return `drawtext=text='${sanitize(line)}':fontcolor=white:fontsize=48:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${i * fadeInDuration},999)':alpha='if(lt(t,${i * fadeInDuration}),0,if(lt(t,${i * fadeInDuration + 1}),t-${i * fadeInDuration},1))'`;
+  const maxWidth = 0.9; // 90% of video width
+  const fontSizeExpr = `(min(48\\, (w*${maxWidth})/text_w*48))`;
+
+  return `drawtext=text='${sanitize(line)}':fontcolor=white:fontsize=${fontSizeExpr}:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${i * fadeInDuration},999)':alpha='if(lt(t,${i * fadeInDuration}),0,if(lt(t,${i * fadeInDuration + 1}),t-${i * fadeInDuration},1))'`;
 });
 
   ffmpeg(inputPath)
