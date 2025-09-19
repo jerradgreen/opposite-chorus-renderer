@@ -18,6 +18,10 @@ app.post("/render", upload.single("video"), (req, res) => {
   const inputPath = req.file.path;
   const outputPath = `rendered/${Date.now()}.mp4`;
 
+  if (!fs.existsSync("rendered")) {
+  fs.mkdirSync("rendered");
+}
+
   const sanitize = (text) =>
   text.replace(/[:\\]/g, "\\$&").replace(/'/g, "\\'").replace(/"/g, '\\"');
 
