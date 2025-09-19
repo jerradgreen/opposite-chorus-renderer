@@ -21,9 +21,6 @@ app.post("/render", upload.single("video"), (req, res) => {
   const sanitize = (text) =>
   text.replace(/[:\\]/g, "\\$&").replace(/'/g, "\\'").replace(/"/g, '\\"');
 
-const sanitize = (text) =>
-  text.replace(/[:\\]/g, "\\$&").replace(/'/g, "\\'").replace(/"/g, '\\"');
-
 const drawtextFilters = lines.map((line, i) => {
   const yOffset = `(h/2 - ${spacing * (lines.length / 2)}) + ${i * spacing}`;
   return `drawtext=text='${sanitize(line)}':fontcolor=white:fontsize=48:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${i * fadeInDuration},999)':alpha='if(lt(t,${i * fadeInDuration}),0,if(lt(t,${i * fadeInDuration + 1}),t-${i * fadeInDuration},1))'`;
