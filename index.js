@@ -12,9 +12,9 @@ app.use(express.json({ limit: "50mb" }));
 app.post("/render", upload.single("video"), (req, res) => {
   const chorus = req.body.opposite_chorus;
   const rawLines = chorus.split(/\r?\n/).filter(Boolean);
-  const spacing = 80;
+  const spacing = 70;
   const fadeInDuration = 1;
-  const wrapLength = 30;
+  const wrapLength = 22; // ← reduced from 30
 
   const sanitize = (text) =>
     text
@@ -22,7 +22,6 @@ app.post("/render", upload.single("video"), (req, res) => {
       .replace(/'/g, "\\'")
       .replace(/"/g, '\\"');
 
-  // Wrap long lines
   const wrapLine = (line, length) => {
     const words = line.split(" ");
     const wrapped = [];
@@ -41,7 +40,6 @@ app.post("/render", upload.single("video"), (req, res) => {
 
   const wrappedLines = rawLines.flatMap(line => wrapLine(line, wrapLength));
 
-  // Ensure 'rendered/' exists
   if (!fs.existsSync("rendered")) {
     fs.mkdirSync("rendered");
   }
@@ -54,7 +52,7 @@ app.post("/render", upload.single("video"), (req, res) => {
     const durationStart = i * fadeInDuration;
     const durationEnd = durationStart + fadeInDuration;
 
-    return `drawtext=text='${sanitize(line)}':fontcolor=white:fontsize=38:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`;
+    return `drawtext=text='${sanitize(line)}':fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`;
   });
 
   ffmpeg(inputPath)
@@ -67,9 +65,8 @@ app.post("/render", upload.single("video"), (req, res) => {
         fs.unlinkSync(outputPath);
       });
     })
-    .on("stderr", (line) => console.log("FFmpeg:", line))
     .on("error", (err) => {
-      console.error("FFmpeg failed:", err);
+      console.error("FFmpeg error:", err);
       res.status(500).send("Rendering failed.");
     })
     .save(outputPath);
