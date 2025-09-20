@@ -23,18 +23,15 @@ app.post("/render", upload.single("video"), (req, res) => {
   }
 
   const sanitize = (text) =>
-  text
-    .replace(/\\/g, "\\\\")      // backslashes
-    .replace(/'/g, "")           // apostrophes
-    .replace(/"/g, '\\"')        // double quotes
-    .replace(/:/g, "\\:")        // colons
-    .replace(/\n/g, " ")         // newlines
-    .replace(/\r/g, " ")         // carriage returns
-    .replace(/%/g, "\\%")        // percent signs
-    .replace(/\[/g, "\\[")       // left bracket
-    .replace(/\]/g, "\\]")       // right bracket
-    .replace(/=/g, "\\=")        // equal signs
-    .replace(/,/g, "\\,");       // commas
+    text
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, "")
+      .replace(/:/g, "\\:")
+      .replace(/\n/g, " ")
+      .replace(/\r/g, " ")
+      .replace(/%/g, "\\%")
+      .replace(/'/g, ""); // also strip apostrophes
+
   let drawtextFilters = [];
 
   // TikTok-style captions mode
@@ -48,7 +45,7 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     drawtextFilters = captions.map((line, i) => {
       const yOffset = `h-(150+${i * 65})`;
-      return `drawtext=text=\"${sanitize(line.text)}\":fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=36:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${line.start},${line.start + line.duration})'`;
+      return `drawtext=text='${sanitize(line.text)}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=36:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${line.start},${line.start + line.duration})'`;
     });
   }
 
@@ -76,9 +73,14 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     const wrappedLines = rawLines.flatMap((line) => wrapLine(line, wrapLength));
 
-    // Header text
+    // Header line
     drawtextFilters.push(
-      `drawtext=text=\"Opposite Chorus Challenge\":fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf:fontcolor=white:fontsize=44:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=100:enable='between(t,0,999)'`
+      `drawtext=text='Opposite Chorus Challenge':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf:fontcolor=white:fontsize=44:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=100:enable='between(t,0,999)'`
+    );
+
+    // Subheading line
+    drawtextFilters.push(
+      `drawtext=text='Guess the original song from this opposite chorus!':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=24:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=150:enable='between(t,0,999)'`
     );
 
     wrappedLines.forEach((line, i) => {
@@ -88,7 +90,7 @@ app.post("/render", upload.single("video"), (req, res) => {
       const safeText = sanitize(line);
 
       drawtextFilters.push(
-        `drawtext=text=\"${safeText}\":fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`
+        `drawtext=text='${safeText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`
       );
     });
   } else {
@@ -104,12 +106,12 @@ app.post("/render", upload.single("video"), (req, res) => {
       fs.access(absPath, fs.constants.F_OK, (err) => {
         if (err) {
           console.error("Output file missing:", absPath);
-          return res.status(500).send("Rendering failed (file not found).");
+          return res.status(500).send("Rendering failed (file not found). ");
         }
         res.sendFile(absPath, (err) => {
           if (err) {
             console.error("Error sending file:", err);
-            return res.status(500).send("Rendering failed (send error).");
+            return res.status(500).send("Rendering failed (send error). ");
           }
           fs.unlinkSync(inputPath);
           fs.unlinkSync(outputPath);
