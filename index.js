@@ -1,3 +1,4 @@
+// index.js
 const express = require("express");
 const multer = require("multer");
 const ffmpeg = require("fluent-ffmpeg");
@@ -23,17 +24,17 @@ app.post("/render", upload.single("video"), (req, res) => {
 
   const sanitize = (text) =>
     text
-      .replace(/\\/g, "\\\\")     // escape backslashes first
-      .replace(/'/g, "\\'")       // escape single quotes
-      .replace(/:/g, "\\:")       // escape colons (FFmpeg bug)
-      .replace(/"/g, '\\"')       // escape double quotes
-      .replace(/\n/g, ' ')        // remove newlines
-      .replace(/\r/g, ' ')        // remove carriage returns
-      .replace(/%/g, '\\%');      // escape percent signs (FFmpeg bug)
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'")
+      .replace(/:/g, "\\:")
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, ' ')
+      .replace(/\r/g, ' ')
+      .replace(/%/g, '\\%');
 
   let drawtextFilters = [];
 
-  // ✨ Mode 1: Animated captions using `captions` array
+  // --- TikTok-style captions mode ---
   if (req.body.captions) {
     let captions = [];
     try {
@@ -44,14 +45,14 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     drawtextFilters = captions.map((line, i) => {
       const yOffset = `h-(150+${i * 65})`;
-      return `drawtext=text='${sanitize(line.text)}':fontcolor=white:fontsize=36:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${line.start},${line.start + line.duration})'`;
+      return `drawtext=text='${sanitize(line.text)}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=36:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${line.start},${line.start + line.duration})'`;
     });
   }
 
-  // ✨ Mode 2: Static block from `opposite_chorus`
+  // --- Full block opposite_chorus mode ---
   else if (req.body.opposite_chorus) {
     const spacing = 70;
-    const wrapLength = 24; // slightly longer lines than before
+    const wrapLength = 22;
     const rawLines = req.body.opposite_chorus.split(/\r?\n/).filter(Boolean);
 
     const wrapLine = (line, length) => {
@@ -77,7 +78,7 @@ app.post("/render", upload.single("video"), (req, res) => {
       const durationStart = i * 1;
       const durationEnd = durationStart + 1;
 
-      return `drawtext=text='${sanitize(line)}':fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`;
+      return `drawtext=text='${sanitize(line)}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`;
     });
   } else {
     return res.status(400).send("Missing required text: either captions[] or opposite_chorus.");
