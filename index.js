@@ -24,13 +24,17 @@ app.post("/render", upload.single("video"), (req, res) => {
 
   const sanitize = (text) =>
   text
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "")              // <--- 🔧 This is the fix
-    .replace(/"/g, '\\"')
-    .replace(/:/g, "\\:")
-    .replace(/\n/g, " ")
-    .replace(/\r/g, " ")
-    .replace(/%/g, "\\%");
+    .replace(/\\/g, "\\\\")      // backslashes
+    .replace(/'/g, "")           // apostrophes
+    .replace(/"/g, '\\"')        // double quotes
+    .replace(/:/g, "\\:")        // colons
+    .replace(/\n/g, " ")         // newlines
+    .replace(/\r/g, " ")         // carriage returns
+    .replace(/%/g, "\\%")        // percent signs
+    .replace(/\[/g, "\\[")       // left bracket
+    .replace(/\]/g, "\\]")       // right bracket
+    .replace(/=/g, "\\=")        // equal signs
+    .replace(/,/g, "\\,");       // commas
   let drawtextFilters = [];
 
   // TikTok-style captions mode
