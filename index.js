@@ -89,21 +89,35 @@ app.post("/render", upload.single("video"), (req, res) => {
   }
 
   ffmpeg(inputPath)
-    .videoFilters(drawtextFilters)
-    .outputOptions("-preset ultrafast")
-    .size("1080x1920")
-    .on("end", () => {
-      res.sendFile(path.resolve(outputPath), () => {
+  .videoFilters(drawtextFilters)
+  .outputOptions("-preset ultrafast")
+  .size("1080x1920")
+  .on("end", () => {
+    const absPath = path.resolve(outputPath);
+
+    fs.access(absPath, fs.constants.F_OK, (err) => {
+      if (err) {
+        console.error("Output file missing:", absPath);
+        return res.status(500).send("Rendering failed (file not found).");
+      }
+
+      res.sendFile(absPath, (err) => {
+        if (err) {
+          console.error("Error sending file:", err);
+          return res.status(500).send("Rendering failed (send error).");
+        }
+
         fs.unlinkSync(inputPath);
         fs.unlinkSync(outputPath);
       });
-    })
-    .on("stderr", (line) => console.log("FFmpeg stderr:", line))
-    .on("error", (err) => {
-      console.error("Rendering error:", err);
-      res.status(500).send("Rendering failed.");
-    })
-    .save(outputPath);
+    });
+  })
+  .on("stderr", (line) => console.log("FFmpeg stderr:", line))
+  .on("error", (err) => {
+    console.error("Rendering error:", err);
+    res.status(500).send("Rendering failed.");
+  })
+  .save(outputPath);
 });
 
 app.get("/", (req, res) => {
