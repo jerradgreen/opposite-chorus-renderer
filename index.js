@@ -50,25 +50,37 @@ app.post("/render", upload.single("video"), (req, res) => {
 
   // --- Full block opposite_chorus mode ---
   else if (req.body.opposite_chorus) {
-    const spacing = 70;
-    const wrapLength = 22;
-    const rawLines = req.body.opposite_chorus.split(/\r?\n/).filter(Boolean);
+  const spacing = 70;
+  const wrapLength = 22;
+  const rawLines = req.body.opposite_chorus.split(/\r?\n/).filter(Boolean);
 
-    const wrapLine = (line, length) => {
-      const words = line.split(" ");
-      const wrapped = [];
-      let current = "";
-      for (const word of words) {
-        if ((current + word).length > length) {
-          wrapped.push(current.trim());
-          current = word + " ";
-        } else {
-          current += word + " ";
-        }
+  const wrapLine = (line, length) => {
+    const words = line.split(" ");
+    const wrapped = [];
+    let current = "";
+    for (const word of words) {
+      if ((current + word).length > length) {
+        wrapped.push(current.trim());
+        current = word + " ";
+      } else {
+        current += word + " ";
       }
-      if (current.trim()) wrapped.push(current.trim());
-      return wrapped;
-    };
+    }
+    if (current.trim()) wrapped.push(current.trim());
+    return wrapped;
+  };
+
+  const wrappedLines = rawLines.flatMap((line) => wrapLine(line, wrapLength));
+
+  drawtextFilters = wrappedLines.map((line, i) => {
+    const yOffset = `(h/2 - ${spacing} * (${wrappedLines.length} / 2)) + ${i * spacing}`;
+    const durationStart = i * 1;
+    const durationEnd = durationStart + 1;
+    const safeText = sanitize(line);
+
+    return `drawtext=text='${safeText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`;
+  });
+}
 
     const wrappedLines = rawLines.flatMap((line) => wrapLine(line, wrapLength));
 
