@@ -25,12 +25,12 @@ app.post("/render", upload.single("video"), (req, res) => {
   const sanitize = (text) =>
     text
       .replace(/\\/g, "\\\\")
-      .replace(/"/g, "")
+      .replace(/"/g, '\\"')
       .replace(/:/g, "\\:")
       .replace(/\n/g, " ")
       .replace(/\r/g, " ")
       .replace(/%/g, "\\%")
-      .replace(/'/g, ""); // also strip apostrophes
+      .replace(/'/g, ""); // remove apostrophes
 
   let drawtextFilters = [];
 
@@ -73,14 +73,12 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     const wrappedLines = rawLines.flatMap((line) => wrapLine(line, wrapLength));
 
-    // Header line
     drawtextFilters.push(
       `drawtext=text='Opposite Chorus Challenge':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf:fontcolor=white:fontsize=44:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=100:enable='between(t,0,999)'`
     );
 
-    // Subheading line
     drawtextFilters.push(
-      `drawtext=text='Guess the original song from this opposite chorus!':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=24:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=150:enable='between(t,0,999)'`
+      `drawtext=text='Guess the original song from this "opposite" chorus!':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=26:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=150:enable='between(t,0,999)'`
     );
 
     wrappedLines.forEach((line, i) => {
@@ -98,20 +96,22 @@ app.post("/render", upload.single("video"), (req, res) => {
   }
 
   ffmpeg(inputPath)
-    .videoFilters(drawtextFilters)
+    .videoFilters([
+      "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+      ...drawtextFilters,
+    ])
     .outputOptions("-preset ultrafast")
-    .size("1080x1920")
     .on("end", () => {
       const absPath = path.resolve(outputPath);
       fs.access(absPath, fs.constants.F_OK, (err) => {
         if (err) {
           console.error("Output file missing:", absPath);
-          return res.status(500).send("Rendering failed (file not found). ");
+          return res.status(500).send("Rendering failed (file not found).");
         }
         res.sendFile(absPath, (err) => {
           if (err) {
             console.error("Error sending file:", err);
-            return res.status(500).send("Rendering failed (send error). ");
+            return res.status(500).send("Rendering failed (send error).");
           }
           fs.unlinkSync(inputPath);
           fs.unlinkSync(outputPath);
