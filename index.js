@@ -106,7 +106,7 @@ app.post("/render", upload.single("video"), (req, res) => {
         res.sendFile(absPath, (err) => {
           if (err) {
             console.error("Error sending file:", err);
-            return res.status(500).send("Rendering failed (send error).”);
+            return res.status(500).send("Rendering failed (send error).");
           }
           fs.unlinkSync(inputPath);
           fs.unlinkSync(outputPath);
