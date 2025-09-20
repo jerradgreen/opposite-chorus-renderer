@@ -1,3 +1,4 @@
+// index.js
 const express = require("express");
 const multer = require("multer");
 const ffmpeg = require("fluent-ffmpeg");
@@ -29,11 +30,11 @@ app.post("/render", upload.single("video"), (req, res) => {
       .replace(/"/g, '\\"')
       .replace(/\n/g, ' ')
       .replace(/\r/g, ' ')
-      .replace(/%/g, "\\%");
+      .replace(/%/g, '\\%');
 
   let drawtextFilters = [];
 
-  // TikTok-style animated captions
+  // TikTok-style captions mode
   if (req.body.captions) {
     let captions = [];
     try {
@@ -44,13 +45,11 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     drawtextFilters = captions.map((line, i) => {
       const yOffset = `h-(150+${i * 65})`;
-      return `drawtext=text='${sanitize(
-        line.text
-      )}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=36:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${line.start},${line.start + line.duration})'`;
+      return `drawtext=text='${sanitize(line.text)}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=36:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${line.start},${line.start + line.duration})'`;
     });
   }
 
-  // Static opposite_chorus block
+  // Opposite chorus block mode
   else if (req.body.opposite_chorus) {
     const spacing = 70;
     const wrapLength = 22;
@@ -74,13 +73,20 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     const wrappedLines = rawLines.flatMap((line) => wrapLine(line, wrapLength));
 
-    drawtextFilters = wrappedLines.map((line, i) => {
-      const yOffset = 540 - spacing * (wrappedLines.length / 2) + i * spacing;
+    // Header text (stays on screen entire time)
+    drawtextFilters.push(
+      `drawtext=text='Opposite Chorus Challenge':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=40:italic=1:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=100:enable='between(t,0,999)'`
+    );
+
+    wrappedLines.forEach((line, i) => {
+      const yOffset = `(h/2 - ${spacing} * (${wrappedLines.length} / 2)) + ${i * spacing}`;
       const durationStart = i * 1;
       const durationEnd = durationStart + 1;
       const safeText = sanitize(line);
 
-      return `drawtext=text='${safeText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`;
+      drawtextFilters.push(
+        `drawtext=text='${safeText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`
+      );
     });
   } else {
     return res.status(400).send("Missing required text: either captions[] or opposite_chorus.");
@@ -92,19 +98,16 @@ app.post("/render", upload.single("video"), (req, res) => {
     .size("1080x1920")
     .on("end", () => {
       const absPath = path.resolve(outputPath);
-
       fs.access(absPath, fs.constants.F_OK, (err) => {
         if (err) {
           console.error("Output file missing:", absPath);
-          return res.status(500).send("Rendering failed (file not found).");
+          return res.status(500).send("Rendering failed (file not found).”);
         }
-
         res.sendFile(absPath, (err) => {
           if (err) {
             console.error("Error sending file:", err);
-            return res.status(500).send("Rendering failed (send error).");
+            return res.status(500).send("Rendering failed (send error).”);
           }
-
           fs.unlinkSync(inputPath);
           fs.unlinkSync(outputPath);
         });
