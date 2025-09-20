@@ -23,9 +23,13 @@ app.post("/render", upload.single("video"), (req, res) => {
 
   const sanitize = (text) =>
     text
-      .replace(/[:\\]/g, "\\$&")
-      .replace(/'/g, "\\'")
-      .replace(/"/g, '\\"');
+      .replace(/\\/g, "\\\\")     // escape backslashes first
+      .replace(/'/g, "\\'")       // escape single quotes
+      .replace(/:/g, "\\:")       // escape colons (FFmpeg bug)
+      .replace(/"/g, '\\"')       // escape double quotes
+      .replace(/\n/g, ' ')        // remove newlines
+      .replace(/\r/g, ' ')        // remove carriage returns
+      .replace(/%/g, '\\%');      // escape percent signs (FFmpeg bug)
 
   let drawtextFilters = [];
 
@@ -47,7 +51,7 @@ app.post("/render", upload.single("video"), (req, res) => {
   // ✨ Mode 2: Static block from `opposite_chorus`
   else if (req.body.opposite_chorus) {
     const spacing = 70;
-    const wrapLength = 22;
+    const wrapLength = 24; // slightly longer lines than before
     const rawLines = req.body.opposite_chorus.split(/\r?\n/).filter(Boolean);
 
     const wrapLine = (line, length) => {
