@@ -74,13 +74,17 @@ app.post("/render", upload.single("video"), (req, res) => {
     const wrappedLines = rawLines.flatMap((line) => wrapLine(line, wrapLength));
 
     drawtextFilters = wrappedLines.map((line, i) => {
-      const yOffset = `(h/2 - ${spacing * (wrappedLines.length / 2)}) + ${i * spacing}`;
+      const yOffset = `(h/2 - ${spacing} * (${wrappedLines.length} / 2)) + ${i * spacing}`;
       const durationStart = i * 1;
       const durationEnd = durationStart + 1;
 
-      return `drawtext=text='${sanitize(line)}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`;
+      const safeText = sanitize(line);
+      return `drawtext=text='${safeText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`;
     });
-  } else {
+  }
+
+  // --- If neither captions nor opposite_chorus provided ---
+  else {
     return res.status(400).send("Missing required text: either captions[] or opposite_chorus.");
   }
 
