@@ -25,12 +25,11 @@ app.post("/render", upload.single("video"), (req, res) => {
   const sanitize = (text) =>
     text
       .replace(/\\/g, "\\\\")
-      .replace(/'/g, "\\'")
-      .replace(/:/g, "\\:")
       .replace(/"/g, '\\"')
-      .replace(/\n/g, ' ')
-      .replace(/\r/g, ' ')
-      .replace(/%/g, '\\%');
+      .replace(/:/g, "\\:")
+      .replace(/\n/g, " ")
+      .replace(/\r/g, " ")
+      .replace(/%/g, "\\%");
 
   let drawtextFilters = [];
 
@@ -45,7 +44,7 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     drawtextFilters = captions.map((line, i) => {
       const yOffset = `h-(150+${i * 65})`;
-      return `drawtext=text='${sanitize(line.text)}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=36:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${line.start},${line.start + line.duration})'`;
+      return `drawtext=text=\"${sanitize(line.text)}\":fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=36:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${line.start},${line.start + line.duration})'`;
     });
   }
 
@@ -73,9 +72,9 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     const wrappedLines = rawLines.flatMap((line) => wrapLine(line, wrapLength));
 
-    // Persistent header
+    // Header text
     drawtextFilters.push(
-      `drawtext=text='Opposite Chorus Challenge':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf:fontcolor=white:fontsize=44:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=100:enable='between(t,0,999)'`
+      `drawtext=text=\"Opposite Chorus Challenge\":fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf:fontcolor=white:fontsize=44:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=100:enable='between(t,0,999)'`
     );
 
     wrappedLines.forEach((line, i) => {
@@ -85,7 +84,7 @@ app.post("/render", upload.single("video"), (req, res) => {
       const safeText = sanitize(line);
 
       drawtextFilters.push(
-        `drawtext=text='${safeText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`
+        `drawtext=text=\"${safeText}\":fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`
       );
     });
   } else {
