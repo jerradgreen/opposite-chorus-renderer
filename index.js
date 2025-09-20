@@ -73,9 +73,9 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     const wrappedLines = rawLines.flatMap((line) => wrapLine(line, wrapLength));
 
-    // Header text (stays on screen entire time)
+    // Persistent header
     drawtextFilters.push(
-      `drawtext=text='Opposite Chorus Challenge':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=40:italic=1:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=100:enable='between(t,0,999)'`
+      `drawtext=text='Opposite Chorus Challenge':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf:fontcolor=white:fontsize=44:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=100:enable='between(t,0,999)'`
     );
 
     wrappedLines.forEach((line, i) => {
