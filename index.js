@@ -23,14 +23,14 @@ app.post("/render", upload.single("video"), (req, res) => {
   }
 
   const sanitize = (text) =>
-    text
-      .replace(/\\/g, "\\\\")
-      .replace(/"/g, '\\"')
-      .replace(/:/g, "\\:")
-      .replace(/\n/g, " ")
-      .replace(/\r/g, " ")
-      .replace(/%/g, "\\%");
-
+  text
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "")              // <--- 🔧 This is the fix
+    .replace(/"/g, '\\"')
+    .replace(/:/g, "\\:")
+    .replace(/\n/g, " ")
+    .replace(/\r/g, " ")
+    .replace(/%/g, "\\%");
   let drawtextFilters = [];
 
   // TikTok-style captions mode
