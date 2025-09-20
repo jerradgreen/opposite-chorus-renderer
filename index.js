@@ -1,4 +1,3 @@
-// index.js
 const express = require("express");
 const multer = require("multer");
 const ffmpeg = require("fluent-ffmpeg");
@@ -34,7 +33,7 @@ app.post("/render", upload.single("video"), (req, res) => {
 
   let drawtextFilters = [];
 
-  // --- TikTok-style animated captions mode ---
+  // --- TikTok-style captions mode ---
   if (req.body.captions) {
     let captions = [];
     try {
@@ -49,7 +48,7 @@ app.post("/render", upload.single("video"), (req, res) => {
     });
   }
 
-  // --- Static opposite_chorus block mode ---
+  // --- Full block opposite_chorus mode ---
   else if (req.body.opposite_chorus) {
     const spacing = 70;
     const wrapLength = 22;
