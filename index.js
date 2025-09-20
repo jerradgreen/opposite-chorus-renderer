@@ -101,7 +101,7 @@ app.post("/render", upload.single("video"), (req, res) => {
       fs.access(absPath, fs.constants.F_OK, (err) => {
         if (err) {
           console.error("Output file missing:", absPath);
-          return res.status(500).send("Rendering failed (file not found).”);
+          return res.status(500).send("Rendering failed (file not found).");
         }
         res.sendFile(absPath, (err) => {
           if (err) {
