@@ -25,16 +25,15 @@ app.post("/render", upload.single("video"), (req, res) => {
   const sanitize = (text) =>
     text
       .replace(/\\/g, "\\\\")
-      .replace(/"/g, '\\"')
+      .replace(/'/g, "")
+      .replace(/"/g, "")
       .replace(/:/g, "\\:")
       .replace(/\n/g, " ")
       .replace(/\r/g, " ")
-      .replace(/%/g, "\\%")
-      .replace(/'/g, ""); // remove apostrophes
+      .replace(/%/g, "\\%");
 
   let drawtextFilters = [];
 
-  // TikTok-style captions mode
   if (req.body.captions) {
     let captions = [];
     try {
@@ -49,7 +48,6 @@ app.post("/render", upload.single("video"), (req, res) => {
     });
   }
 
-  // Opposite chorus block mode
   else if (req.body.opposite_chorus) {
     const spacing = 70;
     const wrapLength = 22;
@@ -73,12 +71,14 @@ app.post("/render", upload.single("video"), (req, res) => {
 
     const wrappedLines = rawLines.flatMap((line) => wrapLine(line, wrapLength));
 
+    // Title header
     drawtextFilters.push(
       `drawtext=text='Opposite Chorus Challenge':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf:fontcolor=white:fontsize=44:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=100:enable='between(t,0,999)'`
     );
 
+    // Subtitle
     drawtextFilters.push(
-      `drawtext=text='Guess the original song from this "opposite" chorus!':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=26:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=150:enable='between(t,0,999)'`
+      `drawtext=text='Guess the original song from this opposite chorus!':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=26:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=160:enable='between(t,0,999)'`
     );
 
     wrappedLines.forEach((line, i) => {
@@ -86,44 +86,45 @@ app.post("/render", upload.single("video"), (req, res) => {
       const durationStart = i * 1;
       const durationEnd = durationStart + 1;
       const safeText = sanitize(line);
-
       drawtextFilters.push(
-        `drawtext=text='${safeText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=34:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`
+        `drawtext=text='${safeText}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontcolor=white:fontsize=38:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${yOffset}:enable='between(t,${durationStart},999)':alpha='if(lt(t,${durationStart}),0,if(lt(t,${durationEnd}),t-${durationStart},1))'`
       );
     });
-  } else {
+  }
+
+  else {
     return res.status(400).send("Missing required text: either captions[] or opposite_chorus.");
   }
 
   ffmpeg(inputPath)
-  .inputOptions(["-stream_loop", "-1"]) // loop input video indefinitely
-  .duration(15)                         // stop after 15 seconds
-  .videoFilters(drawtextFilters)
-  .outputOptions("-preset ultrafast")
-  .size("1080x1920")
-  .on("end", () => {
-    const absPath = path.resolve(outputPath);
-    fs.access(absPath, fs.constants.F_OK, (err) => {
-      if (err) {
-        console.error("Output file missing:", absPath);
-        return res.status(500).send("Rendering failed (file not found).");
-      }
-      res.sendFile(absPath, (err) => {
+    .videoFilters(drawtextFilters)
+    .outputOptions("-preset ultrafast")
+    .duration(15) // ← Minimum duration of 15s
+    .size("1080x1920")
+    .on("end", () => {
+      const absPath = path.resolve(outputPath);
+      fs.access(absPath, fs.constants.F_OK, (err) => {
         if (err) {
-          console.error("Error sending file:", err);
-          return res.status(500).send("Rendering failed (send error).");
+          console.error("Output file missing:", absPath);
+          return res.status(500).send("Rendering failed (file not found).");
         }
-        fs.unlinkSync(inputPath);
-        fs.unlinkSync(outputPath);
+        res.sendFile(absPath, (err) => {
+          if (err) {
+            console.error("Error sending file:", err);
+            return res.status(500).send("Rendering failed (send error).");
+          }
+          fs.unlinkSync(inputPath);
+          fs.unlinkSync(outputPath);
+        });
       });
-    });
-  })
-  .on("stderr", (line) => console.log("FFmpeg stderr:", line))
-  .on("error", (err) => {
-    console.error("Rendering error:", err);
-    res.status(500).send("Rendering failed.");
-  })
-  .save(outputPath);
+    })
+    .on("stderr", (line) => console.log("FFmpeg stderr:", line))
+    .on("error", (err) => {
+      console.error("Rendering error:", err);
+      res.status(500).send("Rendering failed.");
+    })
+    .save(outputPath);
+});
 
 app.get("/", (req, res) => {
   res.send("Opposite Chorus Renderer is live.");
