@@ -101,6 +101,7 @@ app.post("/render", upload.single("video"), (req, res) => {
   ffmpeg(inputPath)
   .videoFilters(drawtextFilters)
   .outputOptions("-preset ultrafast")
+  .duration(15)
   .size("1080x1920")
   .on("end", () => {
     const videoFilename = path.basename(outputPath);
@@ -109,9 +110,8 @@ app.post("/render", upload.single("video"), (req, res) => {
       video_filename: videoFilename
     });
 
-    // Optional cleanup
     fs.unlinkSync(inputPath);
-    // fs.unlinkSync(outputPath); // Leave this commented if you're emailing a link
+    // fs.unlinkSync(outputPath); // keep this commented
   })
   .on("stderr", (line) => console.log("FFmpeg stderr:", line))
   .on("error", (err) => {
