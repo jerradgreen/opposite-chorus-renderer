@@ -104,29 +104,24 @@ app.post("/render", upload.single("video"), (req, res) => {
 
   // Start FFmpeg render
   ffmpeg(inputPath)
-    .videoFilters(drawtextFilters)
-    .outputOptions("-preset ultrafast")
-    .duration(15) // Force video to be 15 seconds minimum
-    .size("1080x1920") // Vertical format for TikTok
-    .on("end", () => {
-      const videoFilename = path.basename(outputPath);
-
-      res.send({
-        video_filename: videoFilename,
-      });
-
-      // Clean up uploaded input (optional)
-      fs.unlinkSync(inputPath);
-
-      // Leave output file on disk so email link can access it
-      // fs.unlinkSync(outputPath);
-    })
-    .on("stderr", (line) => console.log("FFmpeg stderr:", line))
-    .on("error", (err) => {
-      console.error("Rendering error:", err);
-      res.status(500).send("Rendering failed.");
-    })
-    .save(outputPath);
+  .outputOptions("-preset ultrafast")
+  .videoFilters([
+    "scale=1080:1920", // ✅ force resize first
+    ...drawtextFilters // ✅ then add your dynamic text overlays
+  ])
+  .duration(15)
+  .on("end", () => {
+    const videoFilename = path.basename(outputPath);
+    res.send({ video_filename: videoFilename });
+    fs.unlinkSync(inputPath);
+    // fs.unlinkSync(outputPath); // keep commented if you're linking
+  })
+  .on("stderr", (line) => console.log("FFmpeg stderr:", line))
+  .on("error", (err) => {
+    console.error("Rendering error:", err);
+    res.status(500).send("Rendering failed.");
+  })
+  .save(outputPath);
 });
 
 // Base route
