@@ -9,10 +9,12 @@ const app = express();
 const upload = multer({ dest: "uploads/" });
 
 app.use(express.json({ limit: "50mb" }));
+app.use('/rendered', express.static('rendered'));
 
 app.post("/render", upload.single("video"), (req, res) => {
   const inputPath = req.file?.path;
   const outputPath = `rendered/${Date.now()}.mp4`;
+  const videoFilename = path.basename(outputPath);
 
   if (!inputPath) {
     return res.status(400).send("No video file provided.");
@@ -97,33 +99,26 @@ app.post("/render", upload.single("video"), (req, res) => {
   }
 
   ffmpeg(inputPath)
-    .videoFilters(drawtextFilters)
-    .outputOptions("-preset ultrafast")
-    .duration(15) // ← Minimum duration of 15s
-    .size("1080x1920")
-    .on("end", () => {
-      const absPath = path.resolve(outputPath);
-      fs.access(absPath, fs.constants.F_OK, (err) => {
-        if (err) {
-          console.error("Output file missing:", absPath);
-          return res.status(500).send("Rendering failed (file not found).");
-        }
-        res.sendFile(absPath, (err) => {
-          if (err) {
-            console.error("Error sending file:", err);
-            return res.status(500).send("Rendering failed (send error).");
-          }
-          fs.unlinkSync(inputPath);
-          fs.unlinkSync(outputPath);
-        });
-      });
-    })
-    .on("stderr", (line) => console.log("FFmpeg stderr:", line))
-    .on("error", (err) => {
-      console.error("Rendering error:", err);
-      res.status(500).send("Rendering failed.");
-    })
-    .save(outputPath);
+  .videoFilters(drawtextFilters)
+  .outputOptions("-preset ultrafast")
+  .size("1080x1920")
+  .on("end", () => {
+    const videoFilename = path.basename(outputPath);
+
+    res.send({
+      video_filename: videoFilename
+    });
+
+    // Optional cleanup
+    fs.unlinkSync(inputPath);
+    // fs.unlinkSync(outputPath); // Leave this commented if you're emailing a link
+  })
+  .on("stderr", (line) => console.log("FFmpeg stderr:", line))
+  .on("error", (err) => {
+    console.error("Rendering error:", err);
+    res.status(500).send("Rendering failed.");
+  })
+  .save(outputPath);
 });
 
 app.get("/", (req, res) => {
